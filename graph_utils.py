@@ -7,6 +7,11 @@ class Node:
     def __init__(self, description: str):
         self.description = description
     
+    def __str__(self):
+        return self.description
+    
+    def __repr__(self):
+        return self.description
 
 class Graph:
     """Nodes with edges"""
@@ -14,9 +19,12 @@ class Graph:
         self.vertices = set()
         self.edges = {}
 
-    def add_vertex(self, start: Node, end: Node):
-        assert start in vertices, "Start node not found."
-        assert end in vertices, "End node not found."
+    def add_vertex(self, node: Node):
+        self.vertices.add(node)
+
+    def add_edge(self, start: Node, end: Node):
+        assert start in self.vertices, "Start node not found."
+        assert end in self.vertices, "End node not found."
         
         if start not in self.edges:
             self.edges[start] = set()
@@ -28,7 +36,12 @@ class Graph:
         return self.edges[start]
     
 
-def shortest_path_dijkstra(graph: Graph, start: Node, end: Node) -> List[Node]:
+def shortest_path_dijkstra(
+        graph: Graph,
+        start: Node,
+        end: Node,
+        debug: bool=False,
+    ) -> List[Node]:
     """Find the shortest path between two nodes in a graph"""
 
     # A dictionary that stores the shortest path from the start node to all other nodes
@@ -44,10 +57,18 @@ def shortest_path_dijkstra(graph: Graph, start: Node, end: Node) -> List[Node]:
     visited_nodes.add(start)
 
     while end not in shortest_paths_from_start:
+        if debug:
+            print()
+            print(f"***finalized_nodes: {finalized_nodes}")
+            print(f"***visited_nodes: {visited_nodes}")
+
         # Look at all the neighbors. Compare the path length from start.
         neighbors = graph.neighbors(last_added_node)
         for neighbor in neighbors:
+            if debug:
+                print(f"***neighbors: {neighbors}")
             if neighbor not in visited_nodes:
+                visited_nodes.add(neighbor)
                 new_path = shortest_paths_from_start[last_added_node] + [neighbor]
                 if neighbor not in shortest_paths_from_start:
                     shortest_paths_from_start[neighbor] = new_path
@@ -68,7 +89,7 @@ def shortest_path_dijkstra(graph: Graph, start: Node, end: Node) -> List[Node]:
         if min_path_node is None:
             # There is no path to end node.
             return None
-        
+        last_added_node = min_path_node
         finalized_nodes.add(min_path_node)
 
     return shortest_paths_from_start[end]
