@@ -1,13 +1,32 @@
 
 import numpy as np
+from typing import List
 
 class Node:
     """Vertices of a graph"""
-    pass
+    def __init__(self, description: str):
+        self.description = description
+    
 
 class Graph:
     """Nodes with edges"""
-    pass
+    def __init__(self):
+        self.vertices = set()
+        self.edges = {}
+
+    def add_vertex(self, start: Node, end: Node):
+        assert start in vertices, "Start node not found."
+        assert end in vertices, "End node not found."
+        
+        if start not in self.edges:
+            self.edges[start] = set()
+        self.edges[start].add(end)
+    
+    def neighbors(self, start: Node):
+        if start not in self.edges:
+            return []
+        return self.edges[start]
+    
 
 def shortest_path_dijkstra(graph: Graph, start: Node, end: Node) -> List[Node]:
     """Find the shortest path between two nodes in a graph"""
