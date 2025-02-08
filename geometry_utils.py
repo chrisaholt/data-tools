@@ -7,6 +7,16 @@ def perpendicular_to(v):
     else:
         raise ValueError("Only 2D vectors are supported.")
 
+def supporting_hyperplane_from_points(points: np.array):
+    """Finds a supporting hyperplane from a set of points."""
+    mean_point = np.mean(points, axis=0)
+    distances_to_mean = np.linalg.norm(points - mean_point, axis=-1)
+    max_distance_index = int(np.argmax(distances_to_mean))
+    max_distance_point = points[max_distance_index, :]
+    point_to_mean = mean_point - max_distance_point
+    normal = point_to_mean / np.linalg.norm(point_to_mean)
+    return max_distance_point, normal, max_distance_index
+
 
 def convex_hull_2d(points: np.array):
     """Computes the convex hull of a set of 2D points."""
@@ -17,14 +27,10 @@ def convex_hull_2d(points: np.array):
     # First, compute a point which is definitely on the convex hull.
     # Do this by finding the mean of the points, then finding the point
     # which is furthest from the mean.
-    mean_point = np.mean(points, axis=0)
-    distances_to_mean = np.linalg.norm(points - mean_point, axis=-1)
-    max_distance_index = int(np.argmax(distances_to_mean))
+    latest_point, normal, max_distance_index = (
+        supporting_hyperplane_from_points(points)
+    )
     convex_hull_indices.append(max_distance_index)
-
-    latest_point = points[max_distance_index, :]
-    point_to_mean = mean_point - latest_point
-    normal = point_to_mean / np.linalg.norm(point_to_mean)
     direction_of_line = perpendicular_to(normal)
 
     # The line with normal is a (not necessarily tight) supporting hyperplane of the 
