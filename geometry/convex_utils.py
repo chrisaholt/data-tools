@@ -1,13 +1,15 @@
+from typing import Tuple
 import numpy as np
+from .hyperplane import Hyperplane
 
-def perpendicular_to(v):
+def perpendicular_to(v: np.array) -> np.array:
     """Computes a vector perpendicular to the input vector."""
     if v.shape[0] == 2:
         return np.array([-v[1], v[0]])
     else:
         raise ValueError("Only 2D vectors are supported.")
 
-def supporting_hyperplane_from_points(points: np.array):
+def supporting_hyperplane_from_points(points: np.array) -> Tuple[Hyperplane, int]:
     """Finds a supporting hyperplane from a set of points."""
     mean_point = np.mean(points, axis=0)
     distances_to_mean = np.linalg.norm(points - mean_point, axis=-1)
@@ -15,7 +17,10 @@ def supporting_hyperplane_from_points(points: np.array):
     max_distance_point = points[max_distance_index, :]
     point_to_mean = mean_point - max_distance_point
     normal = point_to_mean / np.linalg.norm(point_to_mean)
-    return max_distance_point, normal, max_distance_index
+    return (
+        Hyperplane(max_distance_point, normal),
+        max_distance_index,
+    )
 
 
 def convex_hull_2d(points: np.array):
