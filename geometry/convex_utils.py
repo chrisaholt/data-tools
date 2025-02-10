@@ -28,6 +28,39 @@ def find_cosine_of_largest_angle_from_point_and_direction(
     return cos_angle, index_of_largest_angle
 
 
+def find_cosine_of_largest_angle_from_points_and_direction(
+    base_points: np.array,
+    direction: np.array,
+    points: np.array,
+    indices_to_ignore: List[int] = [],
+) -> Tuple[float, int]:
+    """Finds the point with the largest angle to the direction."""
+    if len(base_points) == 1:
+        return find_cosine_of_largest_angle_from_point_and_direction(
+            base_points[0], direction, points, indices_to_ignore
+        )
+    if len(base_points) > 2:
+        raise ValueError("Only 1 or 2 base points are supported.")
+
+    projection_direction = base_points[1] - base_points[0]
+    projection_direction = projection_direction / np.linalg.norm(projection_direction)
+
+    # Hyperplane to project points into.
+    projection_base_point = base_points[0]
+    projection_normal = direction - np.dot(direction, projection_direction) * projection_direction
+    projection_normal = projection_normal / np.linalg.norm(projection_normal)
+    projection_hyperplane = Hyperplane([projection_base_point], projection_normal)
+
+    # Project points into the hyperplane.
+    projected_points = points - projection_base_point
+    projected_points = projected_points - np.sum(projected_points * projection_direction, axis=-1, keepdims=True) * projection_direction
+    projected_points = projected_points + projection_base_point
+
+    return find_cosine_of_largest_angle_from_point_and_direction(
+        projection_base_point, projection_normal, projected_points, indices_to_ignore
+    )
+
+
 def supporting_hyperplane_from_points(points: np.array) -> Tuple[Hyperplane, int]:
     """Finds a supporting hyperplane from a set of points."""
     mean_point = np.mean(points, axis=0)
@@ -53,7 +86,7 @@ def supporting_face_from_points(points: np.array) -> Tuple[Hyperplane, List[int]
     # Find the next point to add to the face by finding the point
     # with the largest angle to the normal of the current hyperplane.
     while True:
-        if len(hyperplane_point_indices) >= 2:
+        if len(hyperplane_point_indices) >= 3:
             break  # TEMPORARY
 
         if len(hyperplane_point_indices) > len(points):
@@ -62,17 +95,25 @@ def supporting_face_from_points(points: np.array) -> Tuple[Hyperplane, List[int]
         # For each base point on the hyperplane, find the point with the largest angle to the normal.
         cos_angles = []
         furthest_point_indices = []
-        for point in hyperplane.points:
-            cos_angle, furthest_point_index = find_cosine_of_largest_angle_from_point_and_direction(
-                point, hyperplane.normal, points, hyperplane_point_indices
-            )
-            cos_angles.append(cos_angle)
-            furthest_point_indices.append(furthest_point_index)
+        cos_angle, furthest_point_index = find_cosine_of_largest_angle_from_points_and_direction(
+            hyperplane.points, hyperplane.normal, points, hyperplane_point_indices
+        )
+        point_on_hyperplane = hyperplane.points[0]
+        latest_index = furthest_point_index
+
+        # for point in hyperplane.points:
+        #     cos_angle, furthest_point_index = find_cosine_of_largest_angle_from_point_and_direction(
+        #         point, hyperplane.normal, points, hyperplane_point_indices
+        #     )
+        #     cos_angles.append(cos_angle)
+        #     furthest_point_indices.append(furthest_point_index)
 
         # Determine which point to add to the face.
-        hyperplane_point_index_for_largest_angle = np.argmin(cos_angles)
-        point_on_hyperplane = hyperplane.points[hyperplane_point_index_for_largest_angle]
-        latest_index = furthest_point_indices[hyperplane_point_index_for_largest_angle]
+        # hyperplane_point_index_for_largest_angle = np.argmin(cos_angles)
+        # point_on_hyperplane = hyperplane.points[hyperplane_point_index_for_largest_angle]
+        # latest_index = furthest_point_indices[hyperplane_point_index_for_largest_angle]
+
+
         latest_point = points[latest_index, :]
         hyperplane_point_indices.append(latest_index)
 
