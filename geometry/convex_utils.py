@@ -2,6 +2,8 @@ from typing import List, Tuple
 import numpy as np
 from .hyperplane import Hyperplane
 
+from collections import deque
+
 def perpendicular_to(v: np.array) -> np.array:
     """Computes a vector perpendicular to the input vector."""
     if v.shape[0] == 2:
@@ -113,7 +115,6 @@ def supporting_face_from_points(points: np.array) -> Tuple[Hyperplane, List[int]
         # point_on_hyperplane = hyperplane.points[hyperplane_point_index_for_largest_angle]
         # latest_index = furthest_point_indices[hyperplane_point_index_for_largest_angle]
 
-
         latest_point = points[latest_index, :]
         hyperplane_point_indices.append(latest_index)
 
@@ -127,6 +128,75 @@ def supporting_face_from_points(points: np.array) -> Tuple[Hyperplane, List[int]
         hyperplane = Hyperplane(new_hyperplane_points, new_normal)
 
     return hyperplane, hyperplane_point_indices
+
+def convex_hull_3d(points: np.array):
+    """Computes the convex hull of a set of 3D points."""
+    assert points.shape[1] == 3, "Only 3D points are supported."
+
+    # Find one face of the convex hull.
+    hyperplane, hyperplane_point_indices = supporting_face_from_points(points)
+    assert len(hyperplane_point_indices) == 3, "Did not find a triangular face."
+
+    # For each edge on the face, find another face which is adjacent to it.
+    edge_face_stack = deque()
+    edge_face_stack.append((
+        (hyperplane_point_indices[0], hyperplane_point_indices[1]), set(hyperplane_point_indices)))
+    edge_face_stack.append((
+        (hyperplane_point_indices[1], hyperplane_point_indices[2]), set(hyperplane_point_indices)))
+    edge_face_stack.append((
+        (hyperplane_point_indices[2], hyperplane_point_indices[0]), set(hyperplane_point_indices)))
+
+    used_edges = []
+    indices_to_ignore = hyperplane_point_indices
+    normal = hyperplane.normal
+
+    mean = np.mean(points, axis=0)
+
+    loop_counter = 0
+    while len(edge_face_stack) > 0:
+        loop_counter += 1
+        if loop_counter > 10:
+            print("Breaking convex hull loop early.")
+            break
+
+        edge, face = edge_face_stack.pop()
+
+        # Add the edge to the convex hull if not already seen.
+        if edge in used_edges:
+            continue
+        used_edges.append((edge, face))
+
+        # # Mark this edge as used.
+        # for index in edge:
+        #     if index not in indices_to_ignore:
+        #         indices_to_ignore.append(index)
+    
+        # Determine a vector perpendicular to the edge.
+        point_to_mean = mean - points[edge[0], :]
+        point_to_mean = point_to_mean / np.linalg.norm(point_to_mean)
+        edge_direction = points[edge[1], :] - points[edge[0], :]
+        edge_direction = edge_direction / np.linalg.norm(edge_direction)
+        normal = point_to_mean - np.dot(point_to_mean, edge_direction) * edge_direction
+
+        cos_angles = []
+        furthest_point_indices = []
+        edge_points = [
+            points[edge[0], :],
+            points[edge[1], :],
+        ]
+        cos_angle, furthest_point_index = find_cosine_of_largest_angle_from_points_and_direction(
+            # edge_points, normal, points, indices_to_ignore
+            edge_points, normal, points, list(face)
+        )
+        
+        new_face = set([edge[0], edge[1], furthest_point_index])
+        indices_to_ignore.append(furthest_point_index)
+        edge_face_stack.append(((edge[0], furthest_point_index), new_face))
+        edge_face_stack.append(((edge[1], furthest_point_index), new_face))
+
+
+    return [edge_face[0] for edge_face in used_edges]
+
 
 def convex_hull_2d(points: np.array):
     """Computes the convex hull of a set of 2D points."""
