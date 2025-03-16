@@ -140,11 +140,11 @@ def convex_hull_3d(points: np.array):
     # For each edge on the face, find another face which is adjacent to it.
     edge_face_stack = deque()
     edge_face_stack.append((
-        (hyperplane_point_indices[0], hyperplane_point_indices[1]), set(hyperplane_point_indices)))
+        set([hyperplane_point_indices[0], hyperplane_point_indices[1]]), set(hyperplane_point_indices)))
     edge_face_stack.append((
-        (hyperplane_point_indices[1], hyperplane_point_indices[2]), set(hyperplane_point_indices)))
+        set([hyperplane_point_indices[1], hyperplane_point_indices[2]]), set(hyperplane_point_indices)))
     edge_face_stack.append((
-        (hyperplane_point_indices[2], hyperplane_point_indices[0]), set(hyperplane_point_indices)))
+        set([hyperplane_point_indices[2], hyperplane_point_indices[0]]), set(hyperplane_point_indices)))
 
     used_edges = []
     indices_to_ignore = hyperplane_point_indices
@@ -155,16 +155,17 @@ def convex_hull_3d(points: np.array):
     loop_counter = 0
     while len(edge_face_stack) > 0:
         loop_counter += 1
-        if loop_counter > 10:
+        if loop_counter > 30:
             print("Breaking convex hull loop early.")
             break
 
         edge, face = edge_face_stack.pop()
 
         # Add the edge to the convex hull if not already seen.
-        if edge in used_edges:
+        if (edge, face) in used_edges:
             continue
         used_edges.append((edge, face))
+        edge = list(edge)
 
         # # Mark this edge as used.
         # for index in edge:
@@ -191,8 +192,8 @@ def convex_hull_3d(points: np.array):
         
         new_face = set([edge[0], edge[1], furthest_point_index])
         indices_to_ignore.append(furthest_point_index)
-        edge_face_stack.append(((edge[0], furthest_point_index), new_face))
-        edge_face_stack.append(((edge[1], furthest_point_index), new_face))
+        edge_face_stack.append((set([edge[0], furthest_point_index]), new_face))
+        edge_face_stack.append((set([edge[1], furthest_point_index]), new_face))
 
 
     return [edge_face[0] for edge_face in used_edges]
